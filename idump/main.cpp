@@ -5,12 +5,12 @@
  *      Author: hzc
  */
 #include "arpa/inet.h"
-
 #include "pcap/pcap.h"
 #include "pcap-int.h"
-
 #include "pcap_linktypes.h"
 #include "crctable.h"
+
+#include "dev_driver_9563.h"
 
 #define PCAP_BUF_SIZE 2048
 
@@ -32,16 +32,21 @@ typedef struct{
 	u_int32_t data;
 }LinkLayer80211PrismItem;
 
+DevDriver9563 driver9563;
+
 void process_packet(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
 {
 //	printf("sec=%d, usec=%06d, caplen=%d, len=%d\n", h->ts.tv_sec, h->ts.tv_usec, h->caplen, h->len);
 
 	opt.pkt_cnt++;
+	struct rx_info ri;
 
 	if (opt.linktype == LINKTYPE_IEEE802_11_PRISM){
 		LinkLayer80211PrismHeader* hdr = (LinkLayer80211PrismHeader*)bytes;
 		int hdrlen = ntohl(hdr->msglen);
 		int datalen = ntohl(*(int*)(bytes+hdrlen-4));
+
+		driver9563.RadioTapParse(bytes, h->caplen, &ri);
 
 		// calc crc
 		unsigned int long crc;
